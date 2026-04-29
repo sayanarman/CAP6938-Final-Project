@@ -9,6 +9,12 @@ export function createAreaChart({ svgSelector, legendSelector, dataContext, getS
   const yAxisG = g.append("g").attr("class", "axis y-axis");
   const gridG = g.append("g").attr("class", "grid");
   const layersG = g.append("g");
+  const emptyText = g.append("text")
+    .attr("class", "empty-state")
+    .attr("text-anchor", "middle")
+    .attr("fill", "#65716f")
+    .style("font-size", "14px")
+    .style("display", "none");
   const xLabel = g.append("text").attr("class", "axis-label").attr("text-anchor", "middle").attr("fill", "#65716f").text("Year");
   const yLabel = g.append("text").attr("class", "axis-label").attr("text-anchor", "middle").attr("fill", "#65716f").text("Electricity generation (TWh)");
 
@@ -28,6 +34,25 @@ export function createAreaChart({ svgSelector, legendSelector, dataContext, getS
     const innerHeight = height - margin.top - margin.bottom;
     svg.attr("viewBox", [0, 0, width, height]);
     g.attr("transform", `translate(${margin.left},${margin.top})`);
+
+    if (!state.selectedCountry) {
+      xAxisG.selectAll("*").remove();
+      yAxisG.selectAll("*").remove();
+      gridG.selectAll("*").remove();
+      layersG.selectAll("*").remove();
+      xLabel.style("display", "none");
+      yLabel.style("display", "none");
+      emptyText
+        .style("display", null)
+        .attr("x", innerWidth / 2)
+        .attr("y", innerHeight / 2)
+        .text("Select a country to view its electricity mix over time.");
+      return;
+    }
+
+    emptyText.style("display", "none");
+    xLabel.style("display", null);
+    yLabel.style("display", null);
 
     const rows = (dataContext.dataByCountry.get(state.selectedCountry) || [])
       .filter(d => d.year >= state.yearRange[0] && d.year <= state.yearRange[1])

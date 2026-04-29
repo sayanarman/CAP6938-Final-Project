@@ -32,6 +32,10 @@ export function createMap({ svgSelector, legendSelector, dataContext, getState, 
     });
 
   svg.call(zoom).on("dblclick.zoom", null);
+  svg.on("click.clear-selection", event => {
+    if (event.defaultPrevented) return;
+    if (event.target === svg.node()) setSelectedCountry(null);
+  });
   svg.on("dblclick", event => {
     event.preventDefault();
     resetMap();
@@ -57,10 +61,11 @@ export function createMap({ svgSelector, legendSelector, dataContext, getState, 
     .attr("class", "country")
     .attr("d", path)
     .on("click", (event, feature) => {
+      event.stopPropagation();
       const country = getCountryFromMapName(feature.properties.name, dataContext.countryByNormalizedName);
       const state = getState();
       if (country && dataContext.dataByCountry.has(country) && dataContext.countryMatchesRegion(country, state.selectedRegion)) {
-        setSelectedCountry(country);
+        setSelectedCountry(country === state.selectedCountry ? null : country);
       }
     })
     .on("mousemove", (event, feature) => {
@@ -80,7 +85,7 @@ export function createMap({ svgSelector, legendSelector, dataContext, getState, 
 
   function update() {
     const state = getState();
-    const hoveredSource = state.hoveredSource;
+    const hoveredSource = state.selectedCountry ? state.hoveredSource : null;
 
     g.selectAll("path.country")
       .attr("fill", feature => {
@@ -91,7 +96,7 @@ export function createMap({ svgSelector, legendSelector, dataContext, getState, 
       })
       .classed("selected", feature => {
         const country = getCountryFromMapName(feature.properties.name, dataContext.countryByNormalizedName);
-        return country === state.selectedCountry;
+        return Boolean(state.selectedCountry && country === state.selectedCountry);
       })
       .classed("outside-region", feature => {
         const country = getCountryFromMapName(feature.properties.name, dataContext.countryByNormalizedName);

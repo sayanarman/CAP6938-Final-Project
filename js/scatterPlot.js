@@ -100,9 +100,11 @@ export function createScatterPlot({ svgSelector, dataContext, getState, setSelec
       state.selectedRegion
     );
 
-    trajectory = (dataContext.dataByCountry.get(state.selectedCountry) || [])
-      .filter(d => d.year >= state.yearRange[0] && d.year <= state.yearRange[1])
-      .filter(d => Number.isFinite(d.gdp_per_capita) && Number.isFinite(d.carbon_intensity_elec));
+    trajectory = state.selectedCountry
+      ? (dataContext.dataByCountry.get(state.selectedCountry) || [])
+          .filter(d => d.year >= state.yearRange[0] && d.year <= state.yearRange[1])
+          .filter(d => Number.isFinite(d.gdp_per_capita) && Number.isFinite(d.carbon_intensity_elec))
+      : [];
 
     const allX = scatterRows.concat(trajectory).map(d => d.gdp_per_capita).filter(Number.isFinite).filter(d => d > 0);
     const allY = scatterRows.concat(trajectory).map(d => d.carbon_intensity_elec).filter(Number.isFinite);
@@ -156,7 +158,7 @@ export function createScatterPlot({ svgSelector, dataContext, getState, setSelec
       .attr("r", d => d.year === state.yearRange[1] ? 4 : 2.8)
       .on("mousemove", (event, d) => {
         showTooltip(event, `
-          <strong>${state.selectedCountry} · ${d.year}</strong>
+          <strong>${d.country} · ${d.year}</strong>
           GDP per capita: ${formatDollars(d.gdp_per_capita)}<br/>
           Carbon intensity: ${formatCarbon(d.carbon_intensity_elec)}
         `);

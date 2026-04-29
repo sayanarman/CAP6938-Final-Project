@@ -14,7 +14,7 @@ import {
 } from "./utils.js";
 
 const state = {
-  selectedCountry: "United States",
+  selectedCountry: null,
   selectedRegion: "All",
   yearRange: [1990, 2025],
   hoveredSource: null
@@ -30,14 +30,15 @@ function getState() {
 function updateCountrySelectOptions() {
   const countries = dataContext.countriesForRegion(state.selectedRegion);
   const select = d3.select("#country-select");
+  const options = [{ country: "", label: "Select a country" }, ...countries.map(d => ({ ...d, label: d.country }))];
 
   select.selectAll("option")
-    .data(countries, d => d.country)
+    .data(options, d => d.country)
     .join("option")
     .attr("value", d => d.country)
-    .text(d => d.country);
+    .text(d => d.label);
 
-  select.property("value", state.selectedCountry);
+  select.property("value", state.selectedCountry || "");
 }
 
 function updateRegionChips() {
@@ -57,8 +58,10 @@ function updateAll() {
 }
 
 function setSelectedCountry(country) {
-  if (!country || country === state.selectedCountry) return;
-  state.selectedCountry = country;
+  const nextCountry = country || null;
+  if (nextCountry === state.selectedCountry) return;
+  state.selectedCountry = nextCountry;
+  if (!nextCountry) state.hoveredSource = null;
   updateAll();
 }
 
@@ -66,7 +69,7 @@ function setSelectedRegion(region) {
   if (!region || region === state.selectedRegion) return;
   state.selectedRegion = region;
 
-  if (!dataContext.countryMatchesRegion(state.selectedCountry, state.selectedRegion)) {
+  if (state.selectedCountry && !dataContext.countryMatchesRegion(state.selectedCountry, state.selectedRegion)) {
     const replacement = dataContext.countriesForRegion(state.selectedRegion)[0];
     if (replacement) state.selectedCountry = replacement.country;
   }
@@ -89,6 +92,21 @@ function metricHtml(formatter, row, field) {
 }
 
 function updateSummary() {
+  if (!state.selectedCountry) {
+    document.querySelector("#summary-country").textContent = "No country selected";
+    [
+      "#stat-renewables",
+      "#stat-carbon",
+      "#stat-electricity",
+      "#stat-gdp",
+      "#stat-largest-source",
+      "#stat-renewables-change"
+    ].forEach(selector => { document.querySelector(selector).innerHTML = "—"; });
+    document.querySelector("#summary-note").textContent =
+      `Click a country on the map or choose one from the dropdown to view country-level metrics for ${selectedRangeLabel(state.yearRange)}.`;
+    return;
+  }
+
   const anyRow = dataContext.latestCountryRecord(state.selectedCountry, state.yearRange, []);
   const renewablesRow = dataContext.latestCountryRecord(state.selectedCountry, state.yearRange, ["renewables_share_elec"]);
   const carbonRow = dataContext.latestCountryRecord(state.selectedCountry, state.yearRange, ["carbon_intensity_elec"]);
@@ -122,12 +140,8 @@ function updateSummary() {
 async function init() {
   dataContext = await loadDashboardData();
   state.yearRange = [d3.min(dataContext.years), d3.max(dataContext.years)];
-  if (!dataContext.dataByCountry.has(state.selectedCountry)) {
-    state.selectedCountry = dataContext.countries[0]?.country || "";
-  }
-
   const select = d3.select("#country-select");
-  select.on("change", event => setSelectedCountry(event.target.value));
+  select.on("change", event => setSelectedCountry(event.target.value || null));
 
   const regionOptions = ["All", ...dataContext.regions];
   d3.select("#region-filter")

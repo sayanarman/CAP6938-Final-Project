@@ -40,11 +40,12 @@
             <button class="help-button" type="button" aria-label="How to use the map">?
               <span class="help-tooltip" role="tooltip">The map colors each country by its renewable share of
                 electricity generation using the latest available year in the selected time range. Click a country to
-                select it. Scroll to zoom, drag to pan, and use Reset map to return to the world view. Gray means no
-                data is available.</span>
+                select it; click the selected country again or click the ocean/background to clear the selection. Scroll
+                to zoom, drag to pan, and use Reset map to return to the world view. Gray means no data is
+                available.</span>
             </button>
           </div>
-          <p>Click a country to update the dashboard. Gray countries have no available data in the selected range.</p>
+          <p>Click a country to update the dashboard. Click the ocean/background to clear the selected country.</p>
         </div>
         <div class="map-tools">
           <div id="map-legend" class="legend"></div><button id="reset-map" class="small-action" type="button">Reset
@@ -59,8 +60,8 @@
         <h2 id="summary-country">Country summary</h2>
         <button class="help-button" type="button" aria-label="How to read the country summary">?
           <span class="help-tooltip" role="tooltip">This panel summarizes the selected country. Values use the latest
-            available data within the brushed year range. Small labels below each value show the year used for that
-            metric.</span>
+            available data within the brushed year range. Clear the map selection to return this panel to its neutral
+            state.</span>
         </button>
       </div>
       <div class="stat-grid">
@@ -81,8 +82,9 @@
             <h2>Electricity mix over time</h2>
             <button class="help-button" type="button" aria-label="How to use the electricity mix chart">?
               <span class="help-tooltip" role="tooltip">This stacked area chart shows absolute electricity generation by
-                source in TWh for the selected country. Hover a source or legend item to emphasize it; hovering Wind
-                also highlights wind-heavy countries on the map.</span>
+                source in TWh for the selected country. If no country is selected, the chart waits for a country
+                selection. Hover a source or legend item to emphasize it; hovering Wind also highlights wind-heavy
+                countries on the map.</span>
             </button>
           </div>
           <p>Hover an energy source to highlight it. Hover wind to highlight wind-heavy countries.</p>
@@ -99,8 +101,8 @@
             <h2>GDP per capita vs. carbon intensity</h2>
             <button class="help-button" type="button" aria-label="How to use the scatterplot">?
               <span class="help-tooltip" role="tooltip">Each dot is a country using its latest available data in the
-                selected range. The black line traces the selected country over time. Scroll to zoom, drag to pan,
-                double-click or use Reset zoom to return to the full view.</span>
+                selected range. When a country is selected, the black line traces it over time. Scroll to zoom, drag to
+                pan, double-click or use Reset zoom to return to the full view.</span>
             </button>
           </div>
           <p>Each dot uses the latest available country data in the selected range. The selected country trajectory is
