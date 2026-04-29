@@ -321,6 +321,34 @@ svg {
   gap: .45rem;
 }
 
+.area-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .45rem;
+  min-width: 230px;
+}
+
+.metric-control {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  color: var(--muted);
+  font-size: .76rem;
+  white-space: nowrap;
+}
+
+.metric-control select {
+  width: 210px;
+  padding: .45rem .6rem;
+  border-radius: 10px;
+  font-size: .78rem;
+}
+
+.metric-control.disabled {
+  opacity: .55;
+}
+
 .small-action {
   width: auto;
   padding: .45rem .65rem;

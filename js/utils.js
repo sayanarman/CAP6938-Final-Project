@@ -18,6 +18,23 @@ export function comparisonColor(index) {
   return COMPARISON_COLORS[index % COMPARISON_COLORS.length];
 }
 
+export const COMPARISON_METRICS = [
+  { key: "renewables_share_elec", label: "Renewable share (%)", axisLabel: "Renewable electricity share (%)", unit: "%", formatter: formatPercent, domain: "percent" },
+  { key: "coal_electricity", label: "Coal generation (TWh)", axisLabel: "Coal electricity generation (TWh)", unit: "TWh", formatter: formatTWh, domain: "value" },
+  { key: "gas_electricity", label: "Gas generation (TWh)", axisLabel: "Gas electricity generation (TWh)", unit: "TWh", formatter: formatTWh, domain: "value" },
+  { key: "oil_electricity", label: "Oil generation (TWh)", axisLabel: "Oil electricity generation (TWh)", unit: "TWh", formatter: formatTWh, domain: "value" },
+  { key: "nuclear_electricity", label: "Nuclear generation (TWh)", axisLabel: "Nuclear electricity generation (TWh)", unit: "TWh", formatter: formatTWh, domain: "value" },
+  { key: "hydro_electricity", label: "Hydro generation (TWh)", axisLabel: "Hydropower electricity generation (TWh)", unit: "TWh", formatter: formatTWh, domain: "value" },
+  { key: "solar_electricity", label: "Solar generation (TWh)", axisLabel: "Solar electricity generation (TWh)", unit: "TWh", formatter: formatTWh, domain: "value" },
+  { key: "wind_electricity", label: "Wind generation (TWh)", axisLabel: "Wind electricity generation (TWh)", unit: "TWh", formatter: formatTWh, domain: "value" },
+  { key: "electricity_generation", label: "Total generation (TWh)", axisLabel: "Total electricity generation (TWh)", unit: "TWh", formatter: formatTWh, domain: "value" },
+  { key: "carbon_intensity_elec", label: "Carbon intensity", axisLabel: "Electricity carbon intensity (gCO₂e/kWh)", unit: "gCO₂e/kWh", formatter: formatCarbon, domain: "value" }
+];
+
+export function getComparisonMetric(key) {
+  return COMPARISON_METRICS.find(metric => metric.key === key) || COMPARISON_METRICS[0];
+}
+
 export function formatPercent(value, digits = 1) {
   return Number.isFinite(value) ? `${value.toFixed(digits)}%` : "No data";
 }

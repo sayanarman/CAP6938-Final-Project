@@ -5,6 +5,7 @@ import { createScatterPlot } from "./scatterPlot.js";
 import { createTimeline } from "./timeline.js";
 import {
   COMPARISON_LIMIT,
+  COMPARISON_METRICS,
   formatPercent,
   formatCarbon,
   formatTWh,
@@ -19,7 +20,8 @@ const state = {
   comparisonCountries: [],
   selectedRegion: "All",
   yearRange: [1990, 2025],
-  hoveredSource: null
+  hoveredSource: null,
+  comparisonMetric: "renewables_share_elec"
 };
 
 let dataContext;
@@ -95,6 +97,32 @@ function updateCompareControl() {
     .style("display", state.comparisonCountries.length ? "none" : null);
 }
 
+
+function updateComparisonMetricControl() {
+  const select = d3.select("#comparison-metric-select");
+
+  select.selectAll("option")
+    .data(COMPARISON_METRICS, d => d.key)
+    .join("option")
+    .attr("value", d => d.key)
+    .text(d => d.label);
+
+  const comparisonMode = state.comparisonCountries.length >= 2;
+
+  select.property("value", state.comparisonMetric);
+  select.property("disabled", !comparisonMode);
+
+  d3.select(".metric-control")
+    .classed("disabled", !comparisonMode)
+    .style("display", comparisonMode ? null : "none");
+}
+
+function setComparisonMetric(metricKey) {
+  if (!metricKey || metricKey === state.comparisonMetric) return;
+  state.comparisonMetric = metricKey;
+  updateAll();
+}
+
 function updateRegionChips() {
   d3.selectAll("#region-filter .region-chip")
     .classed("active", d => d === state.selectedRegion)
@@ -107,6 +135,7 @@ function updateAll() {
   document.querySelector("#timeline-range-label").textContent = label;
   updateCountrySelectOptions();
   updateCompareControl();
+  updateComparisonMetricControl();
   updateRegionChips();
   updateSummary();
   views.forEach(view => view.update());
@@ -266,6 +295,7 @@ async function init() {
 
   d3.select("#country-select").on("change", event => setSelectedCountry(event.target.value || null));
   d3.select("#compare-select").on("change", event => addComparisonCountry(event.target.value));
+  d3.select("#comparison-metric-select").on("change", event => setComparisonMetric(event.target.value));
 
   const regionOptions = ["All", ...dataContext.regions];
   d3.select("#region-filter")

@@ -91,14 +91,21 @@
             <h2>Electricity over time</h2>
             <button class="help-button" type="button" aria-label="How to use the electricity mix chart">?
               <span class="help-tooltip" role="tooltip">For one selected country, this chart shows absolute electricity
-                generation by source in TWh. With 2 or more comparison countries, it switches to a renewable-share line
-                chart. Hover source layers to emphasize them; hovering Wind also highlights wind-heavy countries on the
-                map.</span>
+                generation by source in TWh. With 2 or more comparison countries, it switches to a line chart using the
+                selected comparison metric. Hover source layers to emphasize them; hovering Wind also highlights
+                wind-heavy countries on the map.</span>
             </button>
           </div>
-          <p>Single-country mode shows electricity mix. Comparison mode shows renewable-share trends.</p>
+          <p>Single-country mode shows electricity mix. Comparison mode compares the selected metric across countries.
+          </p>
         </div>
-        <div id="area-legend" class="legend"></div>
+        <div class="area-tools">
+          <label class="metric-control" for="comparison-metric-select">
+            <span>Compare metric</span>
+            <select id="comparison-metric-select" aria-label="Select comparison line chart metric"></select>
+          </label>
+          <div id="area-legend" class="legend"></div>
+        </div>
       </div>
       <svg id="area-chart"></svg>
     </section>
