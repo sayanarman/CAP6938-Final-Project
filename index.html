@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global Energy Transition Tracker</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">Interactive Visualization Dashboard</p>
+      <h1>Global Energy Transition Tracker</h1>
+      <p class="subtitle">
+        Explore how countries are shifting from fossil-fuel electricity toward renewable and low-carbon generation from
+        1990–2025.
+      </p>
+    </div>
+    <div class="control-card">
+      <div class="card-title-row">
+        <label for="country-select">Selected country</label>
+      </div>
+      <select id="country-select"></select>
+      <div class="region-control" aria-label="Region filter">
+        <div class="control-label">Region</div>
+        <div id="region-filter" class="region-chips" role="radiogroup" aria-label="Filter dashboard by region"></div>
+      </div>
+      <div class="year-readout">Year range: <strong id="year-range-label">1990–2025</strong></div>
+    </div>
+  </header>
+
+  <main class="dashboard-grid">
+    <section class="panel map-panel">
+      <div class="panel-header">
+        <div>
+          <div class="title-with-help">
+            <h2>Renewable electricity share, latest available year</h2>
+            <button class="help-button" type="button" aria-label="How to use the map">?
+              <span class="help-tooltip" role="tooltip">The map colors each country by its renewable share of
+                electricity generation using the latest available year in the selected time range. Click a country to
+                select it. Scroll to zoom, drag to pan, and use Reset map to return to the world view. Gray means no
+                data is available.</span>
+            </button>
+          </div>
+          <p>Click a country to update the dashboard. Gray countries have no available data in the selected range.</p>
+        </div>
+        <div class="map-tools">
+          <div id="map-legend" class="legend"></div><button id="reset-map" class="small-action" type="button">Reset
+            map</button>
+        </div>
+      </div>
+      <svg id="map"></svg>
+    </section>
+
+    <aside class="panel summary-panel">
+      <div class="title-with-help">
+        <h2 id="summary-country">Country summary</h2>
+        <button class="help-button" type="button" aria-label="How to read the country summary">?
+          <span class="help-tooltip" role="tooltip">This panel summarizes the selected country. Values use the latest
+            available data within the brushed year range. Small labels below each value show the year used for that
+            metric.</span>
+        </button>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><span>Renewables</span><strong id="stat-renewables">—</strong></div>
+        <div class="stat"><span>Carbon intensity</span><strong id="stat-carbon">—</strong></div>
+        <div class="stat"><span>Electricity</span><strong id="stat-electricity">—</strong></div>
+        <div class="stat"><span>GDP per capita</span><strong id="stat-gdp">—</strong></div>
+        <div class="stat"><span>Largest source</span><strong id="stat-largest-source">—</strong></div>
+        <div class="stat"><span>Renewables change</span><strong id="stat-renewables-change">—</strong></div>
+      </div>
+      <p id="summary-note" class="summary-note">Select a country on the map or from the dropdown.</p>
+    </aside>
+
+    <section class="panel chart-panel">
+      <div class="panel-header">
+        <div>
+          <div class="title-with-help">
+            <h2>Electricity mix over time</h2>
+            <button class="help-button" type="button" aria-label="How to use the electricity mix chart">?
+              <span class="help-tooltip" role="tooltip">This stacked area chart shows absolute electricity generation by
+                source in TWh for the selected country. Hover a source or legend item to emphasize it; hovering Wind
+                also highlights wind-heavy countries on the map.</span>
+            </button>
+          </div>
+          <p>Hover an energy source to highlight it. Hover wind to highlight wind-heavy countries.</p>
+        </div>
+        <div id="area-legend" class="legend"></div>
+      </div>
+      <svg id="area-chart"></svg>
+    </section>
+
+    <section class="panel chart-panel">
+      <div class="panel-header">
+        <div>
+          <div class="title-with-help">
+            <h2>GDP per capita vs. carbon intensity</h2>
+            <button class="help-button" type="button" aria-label="How to use the scatterplot">?
+              <span class="help-tooltip" role="tooltip">Each dot is a country using its latest available data in the
+                selected range. The black line traces the selected country over time. Scroll to zoom, drag to pan,
+                double-click or use Reset zoom to return to the full view.</span>
+            </button>
+          </div>
+          <p>Each dot uses the latest available country data in the selected range. The selected country trajectory is
+            shown across brushed years.</p>
+        </div>
+      </div>
+      <svg id="scatter-plot"></svg>
+    </section>
+
+    <section class="panel timeline-panel">
+      <div class="panel-header compact">
+        <div>
+          <div class="title-with-help">
+            <h2>Timeline brush: <span id="timeline-range-label">1990–2025</span></h2>
+            <button class="help-button" type="button" aria-label="How to use the timeline brush">?
+              <span class="help-tooltip align-left compact" role="tooltip">Drag the selected region to move the time
+                window, or drag its edges to resize it. All charts recompute using the selected year range. Use Reset
+                years to restore 1990–2025.</span>
+            </button>
+          </div>
+          <p>Drag or resize the brush to filter all views by year.</p>
+        </div>
+        <button id="reset-years" type="button">Reset years</button>
+      </div>
+      <svg id="timeline"></svg>
+    </section>
+  </main>
+
+  <div id="tooltip" class="tooltip" aria-hidden="true"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+
+</html>
