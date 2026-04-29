@@ -1,4 +1,4 @@
-import { formatPercent, getCountryFromMapName, showTooltip, moveTooltip, hideTooltip } from "./utils.js";
+import { formatPercent, getCountryFromMapName, showTooltip, moveTooltip, hideTooltip, comparisonColor } from "./utils.js";
 
 export function createMap({ svgSelector, legendSelector, dataContext, getState, setSelectedCountry }) {
   const svg = d3.select(svgSelector);
@@ -22,10 +22,7 @@ export function createMap({ svgSelector, legendSelector, dataContext, getState, 
 
   const zoom = d3.zoom()
     .scaleExtent([1, 8])
-    .filter(event => {
-      // Keep standard wheel, mouse, and touch zoom/pan behavior, but ignore right-click.
-      return !event.ctrlKey && event.button !== 2;
-    })
+    .filter(event => !event.ctrlKey && event.button !== 2)
     .on("zoom", event => {
       currentTransform = event.transform;
       g.attr("transform", currentTransform);
@@ -73,10 +70,12 @@ export function createMap({ svgSelector, legendSelector, dataContext, getState, 
       const country = getCountryFromMapName(feature.properties.name, dataContext.countryByNormalizedName) || feature.properties.name;
       const row = dataContext.latestCountryRecord(country, state.yearRange, ["renewables_share_elec"]);
       const windRow = dataContext.latestCountryRecord(country, state.yearRange, ["wind_share_elec"]);
+      const compareIndex = state.comparisonCountries.indexOf(country);
       showTooltip(event, `
         <strong>${country}${row ? ` · ${row.year}` : ""}</strong>
         Renewable share: ${formatPercent(row?.renewables_share_elec)}<br/>
         Wind share: ${formatPercent(windRow?.wind_share_elec)}<br/>
+        ${compareIndex >= 0 ? "Included in comparison<br/>" : ""}
         Range: ${state.yearRange[0]}–${state.yearRange[1]}
       `);
       moveTooltip(event);
@@ -98,6 +97,10 @@ export function createMap({ svgSelector, legendSelector, dataContext, getState, 
         const country = getCountryFromMapName(feature.properties.name, dataContext.countryByNormalizedName);
         return Boolean(state.selectedCountry && country === state.selectedCountry);
       })
+      .classed("comparison-country", feature => {
+        const country = getCountryFromMapName(feature.properties.name, dataContext.countryByNormalizedName);
+        return state.comparisonCountries.includes(country);
+      })
       .classed("outside-region", feature => {
         const country = getCountryFromMapName(feature.properties.name, dataContext.countryByNormalizedName);
         return Boolean(country && !dataContext.countryMatchesRegion(country, state.selectedRegion));
@@ -115,6 +118,17 @@ export function createMap({ svgSelector, legendSelector, dataContext, getState, 
         if (country && !dataContext.countryMatchesRegion(country, state.selectedRegion)) return false;
         const row = country ? dataContext.latestCountryRecord(country, state.yearRange, [hoveredSource.shareKey]) : null;
         return Number.isFinite(row?.[hoveredSource.shareKey]) && row[hoveredSource.shareKey] >= 20;
+      })
+      .style("stroke", feature => {
+        const country = getCountryFromMapName(feature.properties.name, dataContext.countryByNormalizedName);
+        if (state.selectedCountry && country === state.selectedCountry) return "#0d1f1b";
+        const compareIndex = state.comparisonCountries.indexOf(country);
+        return compareIndex >= 0 ? comparisonColor(compareIndex) : null;
+      })
+      .style("stroke-width", feature => {
+        const country = getCountryFromMapName(feature.properties.name, dataContext.countryByNormalizedName);
+        if (state.selectedCountry && country === state.selectedCountry) return "2.3px";
+        return state.comparisonCountries.includes(country) ? "2px" : null;
       });
   }
 

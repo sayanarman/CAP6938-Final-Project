@@ -4,6 +4,7 @@ import { createAreaChart } from "./areaChart.js";
 import { createScatterPlot } from "./scatterPlot.js";
 import { createTimeline } from "./timeline.js";
 import {
+  COMPARISON_LIMIT,
   formatPercent,
   formatCarbon,
   formatTWh,
@@ -15,6 +16,7 @@ import {
 
 const state = {
   selectedCountry: null,
+  comparisonCountries: [],
   selectedRegion: "All",
   yearRange: [1990, 2025],
   hoveredSource: null
@@ -24,11 +26,19 @@ let dataContext;
 let views = [];
 
 function getState() {
-  return { ...state, yearRange: [...state.yearRange] };
+  return {
+    ...state,
+    yearRange: [...state.yearRange],
+    comparisonCountries: [...state.comparisonCountries]
+  };
+}
+
+function availableCountries() {
+  return dataContext.countriesForRegion(state.selectedRegion);
 }
 
 function updateCountrySelectOptions() {
-  const countries = dataContext.countriesForRegion(state.selectedRegion);
+  const countries = availableCountries();
   const select = d3.select("#country-select");
   const options = [{ country: "", label: "Select a country" }, ...countries.map(d => ({ ...d, label: d.country }))];
 
@@ -39,6 +49,50 @@ function updateCountrySelectOptions() {
     .text(d => d.label);
 
   select.property("value", state.selectedCountry || "");
+}
+
+function updateCompareControl() {
+  const countries = availableCountries()
+    .filter(d => !state.comparisonCountries.includes(d.country));
+
+  const compareSelect = d3.select("#compare-select");
+  const options = [
+    { country: "", label: state.comparisonCountries.length >= COMPARISON_LIMIT ? `Maximum ${COMPARISON_LIMIT} countries selected` : "Add country to compare" },
+    ...countries.map(d => ({ ...d, label: d.country }))
+  ];
+
+  compareSelect.selectAll("option")
+    .data(options, d => d.country)
+    .join("option")
+    .attr("value", d => d.country)
+    .attr("disabled", (d, i) => i > 0 && state.comparisonCountries.length >= COMPARISON_LIMIT ? true : null)
+    .text(d => d.label);
+
+  compareSelect
+    .property("value", "")
+    .property("disabled", state.comparisonCountries.length >= COMPARISON_LIMIT);
+
+  d3.select("#comparison-count").text(`${state.comparisonCountries.length}/${COMPARISON_LIMIT}`);
+
+  const chips = d3.select("#comparison-chips")
+    .selectAll("button.comparison-chip")
+    .data(state.comparisonCountries, d => d);
+
+  chips.join(
+    enter => enter.append("button")
+      .attr("type", "button")
+      .attr("class", "comparison-chip")
+      .attr("aria-label", d => `Remove ${d} from comparison`)
+      .html(d => `<span>${d}</span><span aria-hidden="true">×</span>`)
+      .on("click", (_, d) => removeComparisonCountry(d)),
+    update => update
+      .attr("aria-label", d => `Remove ${d} from comparison`)
+      .html(d => `<span>${d}</span><span aria-hidden="true">×</span>`),
+    exit => exit.remove()
+  );
+
+  d3.select("#comparison-empty")
+    .style("display", state.comparisonCountries.length ? "none" : null);
 }
 
 function updateRegionChips() {
@@ -52,6 +106,7 @@ function updateAll() {
   document.querySelector("#year-range-label").textContent = label;
   document.querySelector("#timeline-range-label").textContent = label;
   updateCountrySelectOptions();
+  updateCompareControl();
   updateRegionChips();
   updateSummary();
   views.forEach(view => view.update());
@@ -65,15 +120,32 @@ function setSelectedCountry(country) {
   updateAll();
 }
 
+function addComparisonCountry(country) {
+  if (!country || state.comparisonCountries.includes(country)) return;
+  if (state.comparisonCountries.length >= COMPARISON_LIMIT) return;
+  if (!dataContext.countryMatchesRegion(country, state.selectedRegion)) return;
+  state.comparisonCountries = [...state.comparisonCountries, country];
+  state.hoveredSource = null;
+  updateAll();
+}
+
+function removeComparisonCountry(country) {
+  state.comparisonCountries = state.comparisonCountries.filter(d => d !== country);
+  updateAll();
+}
+
 function setSelectedRegion(region) {
   if (!region || region === state.selectedRegion) return;
   state.selectedRegion = region;
 
   if (state.selectedCountry && !dataContext.countryMatchesRegion(state.selectedCountry, state.selectedRegion)) {
-    const replacement = dataContext.countriesForRegion(state.selectedRegion)[0];
-    if (replacement) state.selectedCountry = replacement.country;
+    state.selectedCountry = null;
   }
 
+  state.comparisonCountries = state.comparisonCountries
+    .filter(country => dataContext.countryMatchesRegion(country, state.selectedRegion));
+
+  state.hoveredSource = null;
   updateAll();
 }
 
@@ -92,6 +164,57 @@ function metricHtml(formatter, row, field) {
 }
 
 function updateSummary() {
+  const statGrid = document.querySelector("#summary-stat-grid");
+  const comparisonSummary = document.querySelector("#comparison-summary");
+
+  if (state.comparisonCountries.length >= 2) {
+    statGrid.style.display = "none";
+    comparisonSummary.style.display = null;
+    document.querySelector("#summary-country").textContent = "Country comparison";
+
+    const rows = state.comparisonCountries.map(country => {
+      const latest = dataContext.latestCountryRecord(country, state.yearRange, []);
+      const renewables = dataContext.latestCountryRecord(country, state.yearRange, ["renewables_share_elec"]);
+      const carbon = dataContext.latestCountryRecord(country, state.yearRange, ["carbon_intensity_elec"]);
+      const electricity = dataContext.latestCountryRecord(country, state.yearRange, ["electricity_generation"]);
+      const gdp = dataContext.latestCountryRecord(country, state.yearRange, ["gdp_per_capita"]);
+      const largest = sourceWithLargestGeneration(electricity);
+      return { country, latest, renewables, carbon, electricity, gdp, largest };
+    });
+
+    comparisonSummary.innerHTML = `
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Country</th>
+            <th>Renewables</th>
+            <th>Carbon intensity</th>
+            <th>GDP/capita</th>
+            <th>Largest source</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(row => `
+            <tr>
+              <td><strong>${row.country}</strong></td>
+              <td>${formatPercent(row.renewables?.renewables_share_elec)}${row.renewables ? `<small>${row.renewables.year}</small>` : ""}</td>
+              <td>${formatCarbon(row.carbon?.carbon_intensity_elec)}${row.carbon ? `<small>${row.carbon.year}</small>` : ""}</td>
+              <td>${formatDollars(row.gdp?.gdp_per_capita)}${row.gdp ? `<small>${row.gdp.year}</small>` : ""}</td>
+              <td>${row.largest ? `${row.largest.label}<small>${formatTWh(row.largest.value)} · ${row.electricity.year}</small>` : "No data"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+
+    document.querySelector("#summary-note").textContent =
+      `Comparison mode is using the latest available values within ${selectedRangeLabel(state.yearRange)}. Remove country chips to return to single-country summary mode.`;
+    return;
+  }
+
+  statGrid.style.display = null;
+  comparisonSummary.style.display = "none";
+
   if (!state.selectedCountry) {
     document.querySelector("#summary-country").textContent = "No country selected";
     [
@@ -103,7 +226,7 @@ function updateSummary() {
       "#stat-renewables-change"
     ].forEach(selector => { document.querySelector(selector).innerHTML = "—"; });
     document.querySelector("#summary-note").textContent =
-      `Click a country on the map or choose one from the dropdown to view country-level metrics for ${selectedRangeLabel(state.yearRange)}.`;
+      `Click a country on the map or choose one from the dropdown to view country-level metrics for ${selectedRangeLabel(state.yearRange)}. Add two or more countries to compare them directly.`;
     return;
   }
 
@@ -140,8 +263,9 @@ function updateSummary() {
 async function init() {
   dataContext = await loadDashboardData();
   state.yearRange = [d3.min(dataContext.years), d3.max(dataContext.years)];
-  const select = d3.select("#country-select");
-  select.on("change", event => setSelectedCountry(event.target.value || null));
+
+  d3.select("#country-select").on("change", event => setSelectedCountry(event.target.value || null));
+  d3.select("#compare-select").on("change", event => addComparisonCountry(event.target.value));
 
   const regionOptions = ["All", ...dataContext.regions];
   d3.select("#region-filter")
@@ -156,6 +280,7 @@ async function init() {
     .on("click", (_, d) => setSelectedRegion(d));
 
   updateCountrySelectOptions();
+  updateCompareControl();
 
   views = [
     createMap({ svgSelector: "#map", legendSelector: "#map-legend", dataContext, getState, setSelectedCountry }),

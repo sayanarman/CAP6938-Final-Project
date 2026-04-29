@@ -1,4 +1,4 @@
-import { formatPercent, formatCarbon, formatDollars, showTooltip, moveTooltip, hideTooltip } from "./utils.js";
+import { formatPercent, formatCarbon, formatDollars, showTooltip, moveTooltip, hideTooltip, comparisonColor } from "./utils.js";
 
 export function createScatterPlot({ svgSelector, dataContext, getState, setSelectedCountry }) {
   const svg = d3.select(svgSelector);
@@ -28,14 +28,11 @@ export function createScatterPlot({ svgSelector, dataContext, getState, setSelec
   let baseY = null;
   let currentTransform = d3.zoomIdentity;
   let scatterRows = [];
-  let trajectory = [];
+  let trajectories = [];
 
   const zoom = d3.zoom()
     .scaleExtent([1, 20])
-    .filter(event => {
-      // Keep ordinary clicks/hover on marks working, while still allowing wheel zoom and drag pan.
-      return !event.ctrlKey && !event.button;
-    })
+    .filter(event => !event.ctrlKey && !event.button)
     .on("zoom", event => {
       currentTransform = event.transform;
       redrawWithTransform(currentTransform);
@@ -67,7 +64,7 @@ export function createScatterPlot({ svgSelector, dataContext, getState, setSelec
       .y(d => y(d.carbon_intensity_elec));
 
     pathG.selectAll("path.trajectory")
-      .attr("d", line);
+      .attr("d", d => line(d.values));
 
     pathG.selectAll("circle.trajectory-point")
       .attr("cx", d => x(d.gdp_per_capita))
@@ -100,14 +97,22 @@ export function createScatterPlot({ svgSelector, dataContext, getState, setSelec
       state.selectedRegion
     );
 
-    trajectory = state.selectedCountry
-      ? (dataContext.dataByCountry.get(state.selectedCountry) || [])
-          .filter(d => d.year >= state.yearRange[0] && d.year <= state.yearRange[1])
-          .filter(d => Number.isFinite(d.gdp_per_capita) && Number.isFinite(d.carbon_intensity_elec))
-      : [];
+    const comparisonMode = state.comparisonCountries.length >= 2;
+    const trajectoryCountries = comparisonMode
+      ? state.comparisonCountries
+      : (state.selectedCountry ? [state.selectedCountry] : []);
 
-    const allX = scatterRows.concat(trajectory).map(d => d.gdp_per_capita).filter(Number.isFinite).filter(d => d > 0);
-    const allY = scatterRows.concat(trajectory).map(d => d.carbon_intensity_elec).filter(Number.isFinite);
+    trajectories = trajectoryCountries.map((country, i) => ({
+      country,
+      color: comparisonMode ? comparisonColor(i) : "#1d2424",
+      values: (dataContext.dataByCountry.get(country) || [])
+        .filter(d => d.year >= state.yearRange[0] && d.year <= state.yearRange[1])
+        .filter(d => Number.isFinite(d.gdp_per_capita) && Number.isFinite(d.carbon_intensity_elec))
+    })).filter(d => d.values.length);
+
+    const trajectoryValues = trajectories.flatMap(d => d.values);
+    const allX = scatterRows.concat(trajectoryValues).map(d => d.gdp_per_capita).filter(Number.isFinite).filter(d => d > 0);
+    const allY = scatterRows.concat(trajectoryValues).map(d => d.carbon_intensity_elec).filter(Number.isFinite);
 
     baseX = d3.scaleLog()
       .domain(d3.extent(allX.length ? allX : [1000, 100000]))
@@ -130,11 +135,12 @@ export function createScatterPlot({ svgSelector, dataContext, getState, setSelec
           .attr("fill", d => Number.isFinite(d.renewables_share_elec) ? color(d.renewables_share_elec) : "#b8beb8")
           .on("click", (_, d) => setSelectedCountry(d.country))
           .on("mousemove", (event, d) => {
+            const compareIndex = state.comparisonCountries.indexOf(d.country);
             showTooltip(event, `
               <strong>${d.country} · ${d.year}</strong>
               GDP per capita: ${formatDollars(d.gdp_per_capita)}<br/>
               Carbon intensity: ${formatCarbon(d.carbon_intensity_elec)}<br/>
-              Renewables: ${formatPercent(d.renewables_share_elec)}
+              Renewables: ${formatPercent(d.renewables_share_elec)}${compareIndex >= 0 ? "<br/>Included in comparison" : ""}
             `);
             moveTooltip(event);
           })
@@ -144,18 +150,30 @@ export function createScatterPlot({ svgSelector, dataContext, getState, setSelec
       )
       .attr("r", d => Math.max(3.8, Math.min(12, Math.sqrt((d.electricity_generation || 0) / 35))))
       .attr("fill", d => Number.isFinite(d.renewables_share_elec) ? color(d.renewables_share_elec) : "#b8beb8")
-      .classed("selected", d => d.country === state.selectedCountry);
+      .classed("selected", d => d.country === state.selectedCountry)
+      .classed("comparison-dot", d => state.comparisonCountries.includes(d.country))
+      .style("stroke", d => {
+        if (d.country === state.selectedCountry) return "#111";
+        const compareIndex = state.comparisonCountries.indexOf(d.country);
+        return compareIndex >= 0 ? comparisonColor(compareIndex) : null;
+      })
+      .style("stroke-width", d => {
+        if (d.country === state.selectedCountry) return "2.2px";
+        return state.comparisonCountries.includes(d.country) ? "2px" : null;
+      });
 
     pathG.selectAll("path.trajectory")
-      .data(trajectory.length > 1 ? [trajectory] : [])
+      .data(trajectories.filter(d => d.values.length > 1), d => d.country)
       .join("path")
-      .attr("class", "trajectory");
+      .attr("class", "trajectory")
+      .attr("stroke", d => d.color);
 
     pathG.selectAll("circle.trajectory-point")
-      .data(trajectory, d => d.year)
+      .data(trajectories.flatMap(t => t.values.map(v => ({ ...v, trajectoryCountry: t.country, color: t.color }))), d => `${d.trajectoryCountry}|${d.year}`)
       .join("circle")
       .attr("class", "trajectory-point")
       .attr("r", d => d.year === state.yearRange[1] ? 4 : 2.8)
+      .attr("fill", d => d.color)
       .on("mousemove", (event, d) => {
         showTooltip(event, `
           <strong>${d.country} · ${d.year}</strong>
@@ -174,7 +192,6 @@ export function createScatterPlot({ svgSelector, dataContext, getState, setSelec
       .on("dblclick.zoom", null)
       .on("dblclick", resetZoom);
 
-    // Keep the current zoom while other views update, unless the transform is invalid.
     redrawWithTransform(currentTransform);
   }
 

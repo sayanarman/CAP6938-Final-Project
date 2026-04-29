@@ -23,6 +23,14 @@
         <label for="country-select">Selected country</label>
       </div>
       <select id="country-select"></select>
+      <div class="compare-control" aria-label="Country comparison selector">
+        <div class="control-label compare-label-row"><span>Compare countries</span><span
+            id="comparison-count">0/4</span></div>
+        <select id="compare-select" aria-label="Add a country to the comparison"></select>
+        <div id="comparison-chips" class="comparison-chips" aria-live="polite"></div>
+        <div id="comparison-empty" class="control-hint">Add 2–4 countries to switch the summary, line chart, and
+          scatterplot into comparison mode.</div>
+      </div>
       <div class="region-control" aria-label="Region filter">
         <div class="control-label">Region</div>
         <div id="region-filter" class="region-chips" role="radiogroup" aria-label="Filter dashboard by region"></div>
@@ -40,9 +48,9 @@
             <button class="help-button" type="button" aria-label="How to use the map">?
               <span class="help-tooltip" role="tooltip">The map colors each country by its renewable share of
                 electricity generation using the latest available year in the selected time range. Click a country to
-                select it; click the selected country again or click the ocean/background to clear the selection. Scroll
-                to zoom, drag to pan, and use Reset map to return to the world view. Gray means no data is
-                available.</span>
+                select it; click the selected country again or click the ocean/background to clear the selection.
+                Countries added for comparison receive colored outlines. Scroll to zoom, drag to pan, and use Reset map
+                to return to the world view. Gray means no data is available.</span>
             </button>
           </div>
           <p>Click a country to update the dashboard. Click the ocean/background to clear the selected country.</p>
@@ -59,12 +67,12 @@
       <div class="title-with-help">
         <h2 id="summary-country">Country summary</h2>
         <button class="help-button" type="button" aria-label="How to read the country summary">?
-          <span class="help-tooltip" role="tooltip">This panel summarizes the selected country. Values use the latest
-            available data within the brushed year range. Clear the map selection to return this panel to its neutral
-            state.</span>
+          <span class="help-tooltip" role="tooltip">This panel summarizes the selected country. When 2 or more countries
+            are added for comparison, it switches to a comparison table using the latest available values in the brushed
+            year range.</span>
         </button>
       </div>
-      <div class="stat-grid">
+      <div id="summary-stat-grid" class="stat-grid">
         <div class="stat"><span>Renewables</span><strong id="stat-renewables">—</strong></div>
         <div class="stat"><span>Carbon intensity</span><strong id="stat-carbon">—</strong></div>
         <div class="stat"><span>Electricity</span><strong id="stat-electricity">—</strong></div>
@@ -72,6 +80,7 @@
         <div class="stat"><span>Largest source</span><strong id="stat-largest-source">—</strong></div>
         <div class="stat"><span>Renewables change</span><strong id="stat-renewables-change">—</strong></div>
       </div>
+      <div id="comparison-summary" class="comparison-summary" style="display:none"></div>
       <p id="summary-note" class="summary-note">Select a country on the map or from the dropdown.</p>
     </aside>
 
@@ -79,15 +88,15 @@
       <div class="panel-header">
         <div>
           <div class="title-with-help">
-            <h2>Electricity mix over time</h2>
+            <h2>Electricity over time</h2>
             <button class="help-button" type="button" aria-label="How to use the electricity mix chart">?
-              <span class="help-tooltip" role="tooltip">This stacked area chart shows absolute electricity generation by
-                source in TWh for the selected country. If no country is selected, the chart waits for a country
-                selection. Hover a source or legend item to emphasize it; hovering Wind also highlights wind-heavy
-                countries on the map.</span>
+              <span class="help-tooltip" role="tooltip">For one selected country, this chart shows absolute electricity
+                generation by source in TWh. With 2 or more comparison countries, it switches to a renewable-share line
+                chart. Hover source layers to emphasize them; hovering Wind also highlights wind-heavy countries on the
+                map.</span>
             </button>
           </div>
-          <p>Hover an energy source to highlight it. Hover wind to highlight wind-heavy countries.</p>
+          <p>Single-country mode shows electricity mix. Comparison mode shows renewable-share trends.</p>
         </div>
         <div id="area-legend" class="legend"></div>
       </div>
@@ -101,12 +110,13 @@
             <h2>GDP per capita vs. carbon intensity</h2>
             <button class="help-button" type="button" aria-label="How to use the scatterplot">?
               <span class="help-tooltip" role="tooltip">Each dot is a country using its latest available data in the
-                selected range. When a country is selected, the black line traces it over time. Scroll to zoom, drag to
-                pan, double-click or use Reset zoom to return to the full view.</span>
+                selected range. When a country is selected, the black line traces it over time. With comparison
+                countries, colored lines trace each comparison country. Scroll to zoom, drag to pan, double-click or use
+                Reset zoom to return to the full view.</span>
             </button>
           </div>
-          <p>Each dot uses the latest available country data in the selected range. The selected country trajectory is
-            shown across brushed years.</p>
+          <p>Each dot uses the latest available country data in the selected range. Selected or compared countries are
+            traced across brushed years.</p>
         </div>
       </div>
       <svg id="scatter-plot"></svg>

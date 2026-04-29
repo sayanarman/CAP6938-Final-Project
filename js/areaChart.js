@@ -1,4 +1,4 @@
-import { ENERGY_SOURCES, formatTWh, formatPercent, showTooltip, moveTooltip, hideTooltip } from "./utils.js";
+import { ENERGY_SOURCES, formatTWh, formatPercent, showTooltip, moveTooltip, hideTooltip, comparisonColor } from "./utils.js";
 
 export function createAreaChart({ svgSelector, legendSelector, dataContext, getState, setHoveredSource }) {
   const svg = d3.select(svgSelector);
@@ -16,24 +16,44 @@ export function createAreaChart({ svgSelector, legendSelector, dataContext, getS
     .style("font-size", "14px")
     .style("display", "none");
   const xLabel = g.append("text").attr("class", "axis-label").attr("text-anchor", "middle").attr("fill", "#65716f").text("Year");
-  const yLabel = g.append("text").attr("class", "axis-label").attr("text-anchor", "middle").attr("fill", "#65716f").text("Electricity generation (TWh)");
+  const yLabel = g.append("text").attr("class", "axis-label").attr("text-anchor", "middle").attr("fill", "#65716f");
 
-  legend.selectAll(".legend-item")
-    .data(ENERGY_SOURCES)
-    .join("span")
-    .attr("class", "legend-item")
-    .html(d => `<span class="legend-swatch" style="background:${d.color}"></span>${d.label}`)
-    .on("mouseenter", (_, d) => setHoveredSource(d))
-    .on("mouseleave", () => setHoveredSource(null));
+  function renderSourceLegend() {
+    legend.selectAll(".legend-item")
+      .data(ENERGY_SOURCES, d => d.label)
+      .join("span")
+      .attr("class", "legend-item")
+      .html(d => `<span class="legend-swatch" style="background:${d.color}"></span>${d.label}`)
+      .on("mouseenter", (_, d) => setHoveredSource(d))
+      .on("mouseleave", () => setHoveredSource(null));
+  }
+
+  function renderComparisonLegend(countries) {
+    legend.selectAll(".legend-item")
+      .data(countries, d => d)
+      .join("span")
+      .attr("class", "legend-item")
+      .html((d, i) => `<span class="legend-swatch" style="background:${comparisonColor(i)}"></span>${d}`)
+      .on("mouseenter", null)
+      .on("mouseleave", null);
+  }
 
   function update() {
     const state = getState();
+    const isComparisonMode = state.comparisonCountries.length >= 2;
     const width = svg.node().clientWidth;
     const height = svg.node().clientHeight;
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
     svg.attr("viewBox", [0, 0, width, height]);
     g.attr("transform", `translate(${margin.left},${margin.top})`);
+
+    if (isComparisonMode) {
+      updateComparisonMode(state, innerWidth, innerHeight);
+      return;
+    }
+
+    renderSourceLegend();
 
     if (!state.selectedCountry) {
       xAxisG.selectAll("*").remove();
@@ -46,13 +66,14 @@ export function createAreaChart({ svgSelector, legendSelector, dataContext, getS
         .style("display", null)
         .attr("x", innerWidth / 2)
         .attr("y", innerHeight / 2)
-        .text("Select a country to view its electricity mix over time.");
+        .text("Select a country to view its electricity mix over time, or add 2+ countries to compare renewable share.");
       return;
     }
 
     emptyText.style("display", "none");
-    xLabel.style("display", null);
-    yLabel.style("display", null);
+    layersG.selectAll("path.comparison-line,circle.comparison-line-point").remove();
+    xLabel.style("display", null).text("Year");
+    yLabel.style("display", null).text("Electricity generation (TWh)");
 
     const rows = (dataContext.dataByCountry.get(state.selectedCountry) || [])
       .filter(d => d.year >= state.yearRange[0] && d.year <= state.yearRange[1])
@@ -104,6 +125,64 @@ export function createAreaChart({ svgSelector, legendSelector, dataContext, getS
         moveTooltip(event);
       })
       .on("mouseleave.tooltip", hideTooltip);
+  }
+
+  function updateComparisonMode(state, innerWidth, innerHeight) {
+    renderComparisonLegend(state.comparisonCountries);
+    emptyText.style("display", "none");
+    layersG.selectAll("path.comparison-line,circle.comparison-line-point").remove();
+    xLabel.style("display", null).text("Year");
+    yLabel.style("display", null).text("Renewable electricity share (%)");
+
+    const series = state.comparisonCountries.map(country => ({
+      country,
+      values: (dataContext.dataByCountry.get(country) || [])
+        .filter(d => d.year >= state.yearRange[0] && d.year <= state.yearRange[1])
+        .filter(d => Number.isFinite(d.renewables_share_elec))
+    })).filter(d => d.values.length);
+
+    const years = series.flatMap(d => d.values.map(v => v.year));
+    const values = series.flatMap(d => d.values.map(v => v.renewables_share_elec));
+    const x = d3.scaleLinear().domain(d3.extent(years.length ? years : state.yearRange)).range([0, innerWidth]).nice();
+    const y = d3.scaleLinear().domain([0, Math.max(100, d3.max(values) || 100)]).range([innerHeight, 0]).nice();
+    const line = d3.line()
+      .defined(d => Number.isFinite(d.renewables_share_elec))
+      .x(d => x(d.year))
+      .y(d => y(d.renewables_share_elec));
+
+    gridG.call(d3.axisLeft(y).ticks(5).tickSize(-innerWidth).tickFormat(""));
+    xAxisG.attr("transform", `translate(0,${innerHeight})`).call(d3.axisBottom(x).ticks(8).tickFormat(d3.format("d")));
+    yAxisG.call(d3.axisLeft(y).ticks(5).tickFormat(d => `${d}%`));
+    xLabel.attr("x", innerWidth / 2).attr("y", innerHeight + 36);
+    yLabel.attr("transform", `translate(${-42},${innerHeight / 2}) rotate(-90)`);
+
+    layersG.selectAll("path.area-layer").remove();
+
+    layersG.selectAll("path.comparison-line")
+      .data(series, d => d.country)
+      .join("path")
+      .attr("class", "comparison-line")
+      .attr("fill", "none")
+      .attr("stroke", (d, i) => comparisonColor(i))
+      .attr("stroke-width", 2.4)
+      .attr("d", d => line(d.values));
+
+    layersG.selectAll("circle.comparison-line-point")
+      .data(series.flatMap((s, i) => s.values.map(v => ({ ...v, country: s.country, color: comparisonColor(i) }))), d => `${d.country}|${d.year}`)
+      .join("circle")
+      .attr("class", "comparison-line-point")
+      .attr("r", 3)
+      .attr("cx", d => x(d.year))
+      .attr("cy", d => y(d.renewables_share_elec))
+      .attr("fill", d => d.color)
+      .on("mousemove", (event, d) => {
+        showTooltip(event, `
+          <strong>${d.country} · ${d.year}</strong>
+          Renewable share: ${formatPercent(d.renewables_share_elec)}
+        `);
+        moveTooltip(event);
+      })
+      .on("mouseleave", hideTooltip);
   }
 
   return { update };

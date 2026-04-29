@@ -10,6 +10,14 @@ export const ENERGY_SOURCES = [
   { key: "other_renewable_electricity", shareKey: "other_renewables_share_elec", label: "Other renewables", color: "#83b8a3" }
 ];
 
+export const COMPARISON_LIMIT = 4;
+
+export const COMPARISON_COLORS = ["#1f77b4", "#d95f02", "#7570b3", "#1b9e77"];
+
+export function comparisonColor(index) {
+  return COMPARISON_COLORS[index % COMPARISON_COLORS.length];
+}
+
 export function formatPercent(value, digits = 1) {
   return Number.isFinite(value) ? `${value.toFixed(digits)}%` : "No data";
 }
