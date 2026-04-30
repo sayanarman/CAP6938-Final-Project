@@ -15,7 +15,7 @@
       <h1>Global Energy Transition Tracker</h1>
       <p class="subtitle">
         Explore how countries are shifting from fossil-fuel electricity toward renewable and low-carbon generation from
-        1990–2025.
+        1990-2025.
       </p>
     </div>
     <div class="control-card">
@@ -28,14 +28,14 @@
             id="comparison-count">0/4</span></div>
         <select id="compare-select" aria-label="Add a country to the comparison"></select>
         <div id="comparison-chips" class="comparison-chips" aria-live="polite"></div>
-        <div id="comparison-empty" class="control-hint">Add 2–4 countries to switch the summary, line chart, and
+        <div id="comparison-empty" class="control-hint">Add 2-4 countries to switch the summary, line chart, and
           scatterplot into comparison mode.</div>
       </div>
       <div class="region-control" aria-label="Region filter">
         <div class="control-label">Region</div>
         <div id="region-filter" class="region-chips" role="radiogroup" aria-label="Filter dashboard by region"></div>
       </div>
-      <div class="year-readout">Year range: <strong id="year-range-label">1990–2025</strong></div>
+      <div class="year-readout">Year range: <strong id="year-range-label">1990-2025</strong></div>
     </div>
   </header>
 
@@ -118,8 +118,8 @@
             <button class="help-button" type="button" aria-label="How to use the scatterplot">?
               <span class="help-tooltip" role="tooltip">Each dot is a country using its latest available data in the
                 selected range. When a country is selected, the black line traces it over time. With comparison
-                countries, colored lines trace each comparison country. Scroll to zoom, drag to pan, double-click or use
-                Reset zoom to return to the full view.</span>
+                countries, colored lines trace each comparison country. Scroll to zoom, drag to pan, double-click
+                to return to the full view.</span>
             </button>
           </div>
           <p>Each dot uses the latest available country data in the selected range. Selected or compared countries are
@@ -133,11 +133,12 @@
       <div class="panel-header compact">
         <div>
           <div class="title-with-help">
-            <h2>Timeline brush: <span id="timeline-range-label">1990–2025</span></h2>
+            <h2>Timeline brush: <span id="timeline-range-label">1990-2025</span></h2>
             <button class="help-button" type="button" aria-label="How to use the timeline brush">?
-              <span class="help-tooltip align-left compact" role="tooltip">Drag the selected region to move the time
-                window, or drag its edges to resize it. All charts recompute using the selected year range. Use Reset
-                years to restore 1990–2025.</span>
+              <span class="help-tooltip align-left compact" role="tooltip">Each vertical bar represents one year; taller
+                bars indicate more country records are available for that year. Drag the selected region to move the
+                time window, or drag its edges to resize it. All charts recompute using the selected year range. Use
+                Reset years to restore 1990-2025.</span>
             </button>
           </div>
           <p>Drag or resize the brush to filter all views by year.</p>

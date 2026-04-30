@@ -18,6 +18,14 @@ export function createAreaChart({ svgSelector, legendSelector, dataContext, getS
   const xLabel = g.append("text").attr("class", "axis-label").attr("text-anchor", "middle").attr("fill", "#65716f").text("Year");
   const yLabel = g.append("text").attr("class", "axis-label").attr("text-anchor", "middle").attr("fill", "#65716f");
 
+  function clearAreaHover() {
+    hideTooltip();
+    setHoveredSource(null);
+  }
+
+  svg.on("mouseleave.areaTooltip", clearAreaHover);
+  layersG.on("mouseleave.areaTooltip", clearAreaHover);
+
   function renderSourceLegend() {
     legend.selectAll(".legend-item")
       .data(ENERGY_SOURCES, d => d.label)
@@ -39,6 +47,7 @@ export function createAreaChart({ svgSelector, legendSelector, dataContext, getS
   }
 
   function update() {
+    hideTooltip();
     const state = getState();
     const isComparisonMode = state.comparisonCountries.length >= 2;
     const width = svg.node().clientWidth;
