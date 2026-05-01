@@ -2,7 +2,7 @@ import { formatPercent, formatCarbon, formatDollars, showTooltip, moveTooltip, h
 
 export function createScatterPlot({ svgSelector, dataContext, getState, setSelectedCountry }) {
   const svg = d3.select(svgSelector);
-  const margin = { top: 18, right: 24, bottom: 52, left: 70 };
+  const margin = { top: 18, right: 24, bottom: 52, left: 128 };
   const g = svg.append("g");
   const gridG = g.append("g").attr("class", "grid");
   const xAxisG = g.append("g").attr("class", "axis x-axis");
@@ -19,7 +19,12 @@ export function createScatterPlot({ svgSelector, dataContext, getState, setSelec
   const pathG = marksG.append("g").attr("class", "scatter-trajectory");
 
   const xLabel = g.append("text").attr("text-anchor", "middle").attr("fill", "#65716f").text("GDP per capita");
-  const yLabel = g.append("text").attr("text-anchor", "middle").attr("fill", "#65716f").text("Carbon intensity of electricity (gCO₂e/kWh)");
+  const yLabel = g.append("text")
+    .attr("class", "scatter-y-axis-label")
+    .attr("text-anchor", "middle")
+    .attr("fill", "#65716f")
+    .style("font-size", "9px")
+    .text("Carbon intensity of electricity (gCO₂e/kWh)");
   const color = d3.scaleSequential([0, 100], d3.interpolateYlGn);
 
   let innerWidth = 0;
@@ -124,7 +129,7 @@ export function createScatterPlot({ svgSelector, dataContext, getState, setSelec
       .nice();
 
     xLabel.attr("x", innerWidth / 2).attr("y", innerHeight + 42);
-    yLabel.attr("transform", `translate(${-50},${innerHeight / 2}) rotate(-90)`);
+    yLabel.attr("transform", `translate(${-76},${innerHeight / 2}) rotate(-90)`);
 
     dotsG.selectAll("circle.dot")
       .data(scatterRows, d => d.iso_code)

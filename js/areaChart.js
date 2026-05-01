@@ -3,7 +3,7 @@ import { ENERGY_SOURCES, formatTWh, formatPercent, showTooltip, moveTooltip, hid
 export function createAreaChart({ svgSelector, legendSelector, dataContext, getState, setHoveredSource }) {
   const svg = d3.select(svgSelector);
   const legend = d3.select(legendSelector);
-  const margin = { top: 18, right: 20, bottom: 42, left: 58 };
+  const margin = { top: 18, right: 20, bottom: 42, left: 120 };
   const g = svg.append("g");
   const xAxisG = g.append("g").attr("class", "axis x-axis");
   const yAxisG = g.append("g").attr("class", "axis y-axis");
@@ -108,7 +108,7 @@ export function createAreaChart({ svgSelector, legendSelector, dataContext, getS
     xAxisG.attr("transform", `translate(0,${innerHeight})`).call(d3.axisBottom(x).ticks(Math.min(8, rows.length)).tickFormat(d3.format("d")));
     yAxisG.call(d3.axisLeft(y).ticks(5));
     xLabel.attr("x", innerWidth / 2).attr("y", innerHeight + 36);
-    yLabel.attr("transform", `translate(${-42},${innerHeight / 2}) rotate(-90)`);
+    yLabel.attr("transform", `translate(${-82},${innerHeight / 2}) rotate(-90)`);
 
     layersG.selectAll("path.area-layer")
       .data(series, d => d.key)
@@ -181,7 +181,7 @@ export function createAreaChart({ svgSelector, legendSelector, dataContext, getS
     xAxisG.attr("transform", `translate(0,${innerHeight})`).call(d3.axisBottom(x).ticks(8).tickFormat(d3.format("d")));
     yAxisG.call(d3.axisLeft(y).ticks(5).tickFormat(metric.domain === "percent" ? d => `${d}%` : undefined));
     xLabel.attr("x", innerWidth / 2).attr("y", innerHeight + 36);
-    yLabel.attr("transform", `translate(${-42},${innerHeight / 2}) rotate(-90)`);
+    yLabel.attr("transform", `translate(${-82},${innerHeight / 2}) rotate(-90)`);
 
     layersG.selectAll("path.area-layer").remove();
 
